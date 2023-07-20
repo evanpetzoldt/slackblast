@@ -81,6 +81,16 @@ BACKBLAST_FORM = orm.BlockView(
         orm.ContextBlock(
             text="If trying to tag PAX in here, substitute _ for spaces and do not include titles in parenthesis (ie, @Moneyball not @Moneyball_(F3_STC)). Spelling is important, capitalization is not!"
         ),
+        orm.InputBlock(
+            label="Include a photo?",
+            action=actions.BACKBLAST_PHOTO_ENABLED,
+            optional=True,
+            element=orm.RadioButtonsElement(
+                options=orm.as_selector_options(names=["Yes", "No"], values=["yes", "no"]),
+                initial_value="no",
+            ),
+        ),
+        orm.ContextBlock(text="Slackblast will prompt you for a photo after you submit this form."),
         orm.DividerBlock(),
         orm.InputBlock(
             label="Choose where to post this",

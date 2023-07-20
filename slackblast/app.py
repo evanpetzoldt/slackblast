@@ -243,6 +243,43 @@ def handle_config_email_enable(ack, body, client, logger, context):
     )
 
 
+@app.event("message")
+def handle_message_events(body, logger, client, context):
+    logger.info("body is {}".format(body))
+    # pull up parent message
+    message_results = client.conversations_history(
+        channel=body["event"]["channel"],
+        oldest=body["event"]["thread_ts"],
+        limit=1,
+        inclusive=True,
+    )
+    logger.info("message_results is {}".format(message_results))
+
+    backblast_meta = message_results["messages"][0]["blocks"][-1]["elements"][0]["text"]
+    logger.info("backblast_meta is {}".format(backblast_meta))
+    backblast_channel, backblast_ts = backblast_meta.split("|")
+    logger.info("backblast_channel is {}".format(backblast_channel))
+    logger.info("backblast_ts is {}".format(backblast_ts))
+
+    # get backblast message
+    backblast_results = client.conversations_history(
+        channel=backblast_channel,
+        oldest=backblast_ts,
+        limit=1,
+        inclusive=True,
+    )
+    logger.info("backblast_results is {}".format(backblast_results))
+
+    res = client.chat_update(
+        channel=backblast_channel,
+        ts=backblast_ts,
+        text="content_from_slackblast",
+        username=f"{q_name} (via Slackblast)",
+        icon_url=q_url,
+        blocks=[msg_block, moleskin_block, edit_block],
+    )
+
+
 COMMAND_KWARGS = {}
 COMMAND_ARGS = []
 VIEW_KWARGS = {}
@@ -260,5 +297,4 @@ MATCH_ALL_PATTERN = re.compile(".*")
 
 # Command handlers
 app.command(MATCH_ALL_PATTERN)(*COMMAND_ARGS, **COMMAND_KWARGS)
-
 app.view(MATCH_ALL_PATTERN)(*VIEW_ARGS, **VIEW_KWARGS)

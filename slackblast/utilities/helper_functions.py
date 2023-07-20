@@ -159,6 +159,7 @@ def handle_backblast_post(ack, body, logger, client, context, backblast_data) ->
     moleskin = safe_get(backblast_data, actions.BACKBLAST_MOLESKIN)
     destination = safe_get(backblast_data, actions.BACKBLAST_DESTINATION)
     email_send = safe_get(backblast_data, actions.BACKBLAST_EMAIL_SEND)
+    photo_enabled = safe_get(backblast_data, actions.BACKBLAST_PHOTO_ENABLED)
 
     region_record: Region = DbManager.get_record(Region, id=context["team_id"])
 
@@ -331,6 +332,23 @@ COUNT: {count}
         except Exception as sendmail_err:
             logger.error("Error with sendmail: {}".format(sendmail_err))
             logger.info("\nEmail Sent! \n{}".format(email_msg))
+
+    if (photo_enabled or "no") == "yes":
+        msg_block = {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "Please upload a photo to your latest backblast by using 'reply in thread' to this message with your photo(s) attached. Thanks!",
+            },
+        }
+        ref_block = {
+            "type": "context",
+            "elements": [{"type": "mrkdwn", "text": f'{chan}|{res["ts"]}'}],
+        }
+        res = client.chat_postMessage(
+            channel=context["user_id"],
+            blocks=[msg_block, ref_block],
+        )
 
 
 def handle_backblast_edit_post(ack, body, logger, client, context, backblast_data) -> str:
