@@ -244,7 +244,8 @@ def handle_config_email_enable(ack, body, client, logger, context):
 
 
 @app.event("message")
-def handle_message_events(body, logger, client, context):
+def handle_message_events(ack, body, logger, client, context):
+    ack()
     logger.info("body is {}".format(body))
     # pull up parent message
     message_results = client.conversations_history(
@@ -269,15 +270,29 @@ def handle_message_events(body, logger, client, context):
         inclusive=True,
     )
     logger.info("backblast_results is {}".format(backblast_results))
-
+    blocks = backblast_results["messages"][0]["blocks"]
+    file_id = body["event"]["files"][0]["id"]
+    file_public = client.files_sharedPublicURL(file=file_id)
+    photo_url = (
+        file_public["file"]["url_private"]
+        + "?pub_secret="
+        + file_public["file"]["permalink_public"].split("-")[-1]
+    )
+    blocks.insert(-1, {"type": "image", "image_url": photo_url, "alt_text": "image"})
     res = client.chat_update(
         channel=backblast_channel,
         ts=backblast_ts,
-        text="content_from_slackblast",
-        username=f"{q_name} (via Slackblast)",
-        icon_url=q_url,
-        blocks=[msg_block, moleskin_block, edit_block],
+        blocks=blocks,
     )
+
+    # res = client.chat_update(
+    #     channel=backblast_channel,
+    #     ts=backblast_ts,
+    #     text="content_from_slackblast",
+    #     username=f"{q_name} (via Slackblast)",
+    #     icon_url=q_url,
+    #     blocks=[msg_block, moleskin_block, edit_block],
+    # )
 
 
 COMMAND_KWARGS = {}
